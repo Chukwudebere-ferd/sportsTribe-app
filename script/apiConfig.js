@@ -10,7 +10,8 @@ const API_CONFIG = {
     },
   },
   newsApi: {
-    baseUrl: "https://newsapi.org/v2",
+    // Using our own Vercel proxy for news too
+    baseUrl: window.location.origin + "/api/news",
     apiKey: "96d093d5d3404ae8b87c1259b554c412",
   },
 };

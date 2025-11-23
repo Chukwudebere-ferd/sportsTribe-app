@@ -43,8 +43,8 @@ class NewsFeed {
     try {
       this.showLoading();
 
-      // Fetch football/soccer news from NewsAPI
-      const url = `${API_CONFIG.newsApi.baseUrl}/everything?q=football OR soccer&language=en&sortBy=publishedAt&pageSize=20&apiKey=${API_CONFIG.newsApi.apiKey}`;
+      // Use our proxy endpoint (no query params needed, proxy handles it)
+      const url = API_CONFIG.newsApi.baseUrl;
 
       const data = await apiFetch(url);
 
