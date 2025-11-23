@@ -1,4 +1,4 @@
-// Live Scores Page - Feature 1
+// Live Scores Page - Feature 1 (Uses TheSportsDB)
 import { API_CONFIG, apiFetch } from "./apiConfig.js";
 
 class LiveScores {
@@ -21,16 +21,15 @@ class LiveScores {
     try {
       this.showLoading();
 
-      const today = new Date().toISOString().split("T")[0];
-      // Use our proxy endpoint
-      const url = `${API_CONFIG.footballData.baseUrl}?endpoint=fixtures?date=${today}`;
+      // Get today's soccer events from TheSportsDB
+      const url = `${API_CONFIG.footballData.baseUrl}`;
 
       const data = await apiFetch(url, {
         headers: API_CONFIG.footballData.headers,
       });
 
-      // API-Football returns data in response.response array
-      this.displayMatches(data.response || []);
+      // TheSportsDB returns events.event array
+      this.displayMatches(data.events || []);
       this.hideLoading();
     } catch (error) {
       console.error("Error loading matches:", error);
@@ -59,32 +58,30 @@ class LiveScores {
     const matchCards = document.querySelectorAll(".match-card");
     matchCards.forEach((card, index) => {
       card.addEventListener("click", () => {
-        const matchId = matches[index].fixture.id;
+        const matchId = matches[index].idEvent;
         this.goToMatchDetails(matchId);
       });
     });
   }
 
   createMatchCard(match) {
-    const status = this.getMatchStatus(match.fixture.status.short);
-    const homeTeam = match.teams.home.name;
-    const awayTeam = match.teams.away.name;
-    const homeScore = match.goals.home ?? "-";
-    const awayScore = match.goals.away ?? "-";
-    const league = match.league.name;
-    const time = this.formatMatchTime(match.fixture.date);
+    const status = this.getMatchStatus(match);
+    const homeTeam = match.strHomeTeam;
+    const awayTeam = match.strAwayTeam;
+    const homeScore = match.intHomeScore || "-";
+    const awayScore = match.intAwayScore || "-";
+    const league = match.strLeague;
+    const time = this.formatMatchTime(match.strTimestamp || match.dateEvent);
 
-    const isLive = ["1H", "2H", "HT", "ET", "P", "LIVE"].includes(
-      match.fixture.status.short
-    );
-    const isFinished = match.fixture.status.short === "FT";
+    const isFinished =
+      match.strStatus === "Match Finished" || match.strStatus === "FT";
     const scoreDisplay =
-      isLive || isFinished
+      isFinished && match.intHomeScore !== null
         ? `<div class="match-score">${homeScore} - ${awayScore}</div>`
         : `<div class="match-vs">VS</div>`;
 
     return `
-      <div class="match-card" data-match-id="${match.fixture.id}">
+      <div class="match-card" data-match-id="${match.idEvent}">
         <div class="match-status ${status.class}">${status.text}</div>
         
         <div class="match-teams">
@@ -107,29 +104,29 @@ class LiveScores {
     `;
   }
 
-  getMatchStatus(statusShort) {
-    // API-Football status codes
-    const liveStatuses = ["1H", "2H", "HT", "ET", "P", "LIVE"];
-    const finishedStatuses = ["FT", "AET", "PEN"];
+  getMatchStatus(match) {
+    const status = match.strStatus || "";
 
-    if (liveStatuses.includes(statusShort)) {
-      return { text: "LIVE", class: "live" };
-    } else if (finishedStatuses.includes(statusShort)) {
+    if (status.includes("Finished") || status === "FT") {
       return { text: "FINISHED", class: "finished" };
-    } else if (["TBD", "NS"].includes(statusShort)) {
-      return { text: "UPCOMING", class: "scheduled" };
-    } else if (["PST", "CANC"].includes(statusShort)) {
+    } else if (status.includes("Postponed")) {
       return { text: "POSTPONED", class: "scheduled" };
     } else {
-      return { text: statusShort, class: "scheduled" };
+      return { text: "SCHEDULED", class: "scheduled" };
     }
   }
 
-  formatMatchTime(dateString) {
-    const date = new Date(dateString);
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
+  formatMatchTime(timestamp) {
+    if (!timestamp) return "TBD";
+
+    try {
+      const date = new Date(timestamp);
+      const hours = date.getHours().toString().padStart(2, "0");
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      return `${hours}:${minutes}`;
+    } catch (e) {
+      return "TBD";
+    }
   }
 
   goToMatchDetails(matchId) {

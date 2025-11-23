@@ -1,4 +1,4 @@
-// Match Details Page - Feature 2
+// Match Details Page - Feature 2 (Uses TheSportsDB)
 import { API_CONFIG, apiFetch } from "./apiConfig.js";
 
 class MatchDetails {
@@ -60,25 +60,19 @@ class MatchDetails {
     try {
       this.showLoading();
 
-      // Use our proxy endpoint
-      const url = `${API_CONFIG.footballData.baseUrl}?endpoint=fixtures?id=${matchId}`;
+      // Get specific match details from TheSportsDB
+      const url = `${API_CONFIG.footballData.baseUrl}?type=match&id=${matchId}`;
 
       const data = await apiFetch(url, {
         headers: API_CONFIG.footballData.headers,
       });
 
-      // API-Football returns data in response.response array
-      const match = data.response && data.response[0];
+      // TheSportsDB returns events.event array
+      const match = data.events && data.events[0];
 
       if (match) {
         this.displayMatchDetails(match);
         this.hideLoading();
-
-        // Start auto-refresh for live matches
-        const liveStatuses = ["1H", "2H", "HT", "ET", "P", "LIVE"];
-        if (liveStatuses.includes(match.fixture.status.short)) {
-          this.startAutoRefresh();
-        }
       } else {
         throw new Error("Match not found");
       }
@@ -90,15 +84,16 @@ class MatchDetails {
   }
 
   displayMatchDetails(match) {
-    const homeTeam = match.teams.home.name;
-    const awayTeam = match.teams.away.name;
-    const homeScore = match.goals.home ?? 0;
-    const awayScore = match.goals.away ?? 0;
-    const league = match.league.name;
-    const status = this.getMatchStatus(match.fixture.status.short);
-    const kickoffTime = this.formatDateTime(match.fixture.date);
-    const venue = match.fixture.venue.name || "TBA";
-    const referee = match.fixture.referee || "TBA";
+    const homeTeam = match.strHomeTeam;
+    const awayTeam = match.strAwayTeam;
+    const homeScore = match.intHomeScore ?? 0;
+    const awayScore = match.intAwayScore ?? 0;
+    const league = match.strLeague;
+    const status = this.getMatchStatus(match);
+    const kickoffTime = this.formatDateTime(
+      match.strTimestamp || match.dateEvent
+    );
+    const venue = match.strVenue || "TBA";
 
     this.detailsContainer.innerHTML = `
       <div class="match-details-card">
@@ -141,13 +136,13 @@ class MatchDetails {
           </div>
           
           <div class="info-item">
-            <div class="info-label">👮 Referee</div>
-            <div class="info-value">${referee}</div>
+            <div class="info-label">📊 Status</div>
+            <div class="info-value">${match.strStatus || "Scheduled"}</div>
           </div>
           
           <div class="info-item">
-            <div class="info-label">📊 Status</div>
-            <div class="info-value">${match.fixture.status.long}</div>
+            <div class="info-label">🌍 Country</div>
+            <div class="info-value">${match.strCountry || "International"}</div>
           </div>
           
           <div class="info-item">
@@ -155,8 +150,6 @@ class MatchDetails {
             <div class="info-value">${league}</div>
           </div>
         </div>
-
-        ${this.renderScoreBreakdown(match.score)}
       </div>
     `;
 
@@ -171,110 +164,35 @@ class MatchDetails {
     }
   }
 
-  renderScoreBreakdown(score) {
-    const hasHalfTime =
-      score.halftime.home !== null && score.halftime.away !== null;
-    const hasFullTime =
-      score.fulltime.home !== null && score.fulltime.away !== null;
+  getMatchStatus(match) {
+    const status = match.strStatus || "";
 
-    if (!hasHalfTime && !hasFullTime) {
-      return "";
-    }
-
-    return `
-      <div class="score-breakdown">
-        <h4>Score Breakdown</h4>
-        <table class="score-table">
-          <thead>
-            <tr>
-              <th>Period</th>
-              <th>Home</th>
-              <th>Away</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              hasHalfTime
-                ? `
-              <tr>
-                <td>Half Time</td>
-                <td>${score.halftime.home}</td>
-                <td>${score.halftime.away}</td>
-              </tr>
-            `
-                : ""
-            }
-            ${
-              hasFullTime
-                ? `
-              <tr>
-                <td>Full Time</td>
-                <td>${score.fulltime.home}</td>
-                <td>${score.fulltime.away}</td>
-              </tr>
-            `
-                : ""
-            }
-            ${
-              score.extratime.home !== null
-                ? `
-              <tr>
-                <td>Extra Time</td>
-                <td>${score.extratime.home}</td>
-                <td>${score.extratime.away}</td>
-              </tr>
-            `
-                : ""
-            }
-            ${
-              score.penalty.home !== null
-                ? `
-              <tr>
-                <td>Penalties</td>
-                <td>${score.penalty.home}</td>
-                <td>${score.penalty.away}</td>
-              </tr>
-            `
-                : ""
-            }
-          </tbody>
-        </table>
-      </div>
-    `;
-  }
-
-  getMatchStatus(statusShort) {
-    const liveStatuses = ["1H", "2H", "HT", "ET", "P", "LIVE"];
-    const finishedStatuses = ["FT", "AET", "PEN"];
-
-    if (liveStatuses.includes(statusShort)) {
-      return { text: "🔴 LIVE", class: "live" };
-    } else if (finishedStatuses.includes(statusShort)) {
+    if (status.includes("Finished") || status === "FT") {
       return { text: "✅ FINISHED", class: "finished" };
+    } else if (status.includes("Postponed")) {
+      return { text: "⏱️ POSTPONED", class: "scheduled" };
     } else {
-      return { text: "⏱️ UPCOMING", class: "scheduled" };
+      return { text: "⏱️ SCHEDULED", class: "scheduled" };
     }
   }
 
-  formatDateTime(dateString) {
-    const date = new Date(dateString);
-    const options = {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    return date.toLocaleDateString("en-US", options);
-  }
+  formatDateTime(timestamp) {
+    if (!timestamp) return "TBD";
 
-  startAutoRefresh() {
-    // Refresh every 30 seconds for live matches
-    this.refreshInterval = setInterval(() => {
-      console.log("Auto-refreshing match details...");
-      this.loadMatchDetails();
-    }, 30000);
+    try {
+      const date = new Date(timestamp);
+      const options = {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      };
+      return date.toLocaleDateString("en-US", options);
+    } catch (e) {
+      return "TBD";
+    }
   }
 
   stopAutoRefresh() {

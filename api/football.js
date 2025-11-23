@@ -1,4 +1,4 @@
-// Serverless function to proxy football API requests
+// Serverless function to proxy football API requests using TheSportsDB
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -11,17 +11,28 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { endpoint } = req.query;
-    const apiUrl = `https://api-football-v1.p.rapidapi.com/v3/${endpoint}`;
+    const { type, id } = req.query;
+    let apiUrl;
 
-    const response = await fetch(apiUrl, {
-      headers: {
-        "X-RapidAPI-Key": "938c90c97c5f4cd781d0332677a916a5",
-        "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
-      },
-    });
+    // TheSportsDB free API
+    if (type === "next") {
+      // Get next 15 events for a league
+      apiUrl = `https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${id}`;
+    } else if (type === "last") {
+      // Get last 15 events for a league
+      apiUrl = `https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${id}`;
+    } else if (type === "match") {
+      // Get specific match details
+      apiUrl = `https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${id}`;
+    } else {
+      // Default: Get today's events (all leagues)
+      const today = new Date().toISOString().split("T")[0];
+      apiUrl = `https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${today}&s=Soccer`;
+    }
 
+    const response = await fetch(apiUrl);
     const data = await response.json();
+
     res.status(200).json(data);
   } catch (error) {
     console.error("Proxy error:", error);
