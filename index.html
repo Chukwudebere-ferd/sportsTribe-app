@@ -54,15 +54,28 @@
       <!-- Live Stream Page -->
       <div id="stream" class="page">
         <h2 class="section-title">📺 Live Stream</h2>
-        <div class="stream-container">
-          <iframe
-            id="stream-iframe"
-            class="stream-iframe"
-            src="http://server1.bdixsports.live/all/appevent_football.php"
-            allowfullscreen
-            allow="autoplay; fullscreen"
-          >
-          </iframe>
+        <div
+          class="stream-container"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 40px;
+          "
+        >
+          <div style="text-align: center; color: var(--light-gray)">
+            <h3 style="color: var(--brand-blue); margin-bottom: 20px">
+              Stream Available in App
+            </h3>
+            <p style="margin-bottom: 10px">
+              The live stream is available when you use this app in your app
+              creator.
+            </p>
+            <p style="font-size: 14px">
+              Web browsers block HTTP streams on HTTPS sites for security.
+            </p>
+          </div>
         </div>
       </div>
     </main>
