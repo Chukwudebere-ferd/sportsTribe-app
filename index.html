@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sports Tribe - Live Football Scores & News</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style/styles.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header>
+      <h1><span class="logo-s">s</span>ports tribe</h1>
+    </header>
+
+    <!-- Main Content Area -->
+    <main>
+      <!-- Live Scores Page (Default) -->
+      <div id="live-scores" class="page active">
+        <h2 class="section-title">🏆 Live Scores</h2>
+        <div id="matches-loading" class="loading">
+          <div class="spinner"></div>
+          <p>Loading today's matches...</p>
+        </div>
+        <div id="matches-container" class="matches-container"></div>
+        <div id="matches-error" class="error-message hidden"></div>
+      </div>
+
+      <!-- Match Details Page -->
+      <div id="match-details" class="page">
+        <h2 class="section-title">⚽ Match Details</h2>
+        <div id="match-details-loading" class="loading">
+          <div class="spinner"></div>
+          <p>Loading match details...</p>
+        </div>
+        <div id="match-details-container"></div>
+        <div id="match-details-error" class="error-message hidden"></div>
+      </div>
+
+      <!-- News Feed Page -->
+      <div id="news" class="page">
+        <h2 class="section-title">📰 Football News</h2>
+        <div id="news-loading" class="loading">
+          <div class="spinner"></div>
+          <p>Loading latest news...</p>
+        </div>
+        <div id="news-container" class="news-container"></div>
+        <div id="news-error" class="error-message hidden"></div>
+      </div>
+
+      <!-- Live Stream Page -->
+      <div id="stream" class="page">
+        <h2 class="section-title">📺 Live Stream</h2>
+        <div class="stream-container">
+          <iframe
+            id="stream-iframe"
+            class="stream-iframe"
+            src="http://server1.bdixsports.live/all/appevent_football.php"
+            allowfullscreen
+            allow="autoplay; fullscreen"
+          >
+          </iframe>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" data-page="live-scores">
+        <div class="nav-icon">🏆</div>
+        <div class="nav-label">Scores</div>
+      </div>
+      <div class="nav-item" data-page="news">
+        <div class="nav-icon">📰</div>
+        <div class="nav-label">News</div>
+      </div>
+      <div class="nav-item" data-page="stream">
+        <div class="nav-icon">📺</div>
+        <div class="nav-label">Stream</div>
+      </div>
+    </nav>
+
+    <!-- Scripts -->
+    <script type="module" src="./script/apiConfig.js"></script>
+    <script type="module" src="./script/navigation.js"></script>
+    <script type="module" src="./script/liveScores.js"></script>
+    <script type="module" src="./script/matchDetails.js"></script>
+    <script type="module" src="./script/news.js"></script>
+    <script type="module" src="./script/firebaseConfig.js"></script>
+  </body>
+</html>
