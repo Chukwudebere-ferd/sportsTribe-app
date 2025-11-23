@@ -1,12 +1,12 @@
-// API Configuration for Sports Tribe App
+// API Configuration for Sports Tribe App - Using Vercel Proxy
 const API_CONFIG = {
-  // Using API-Football via RapidAPI (better CORS support)
+  // Using our own Vercel proxy to bypass CORS
   footballData: {
-    baseUrl: "https://api-football-v1.p.rapidapi.com/v3",
+    // In production, this will be your Vercel URL
+    baseUrl: window.location.origin + "/api/football",
     apiKey: "938c90c97c5f4cd781d0332677a916a5",
     headers: {
-      "X-RapidAPI-Key": "938c90c97c5f4cd781d0332677a916a5",
-      "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
+      "Content-Type": "application/json",
     },
   },
   newsApi: {

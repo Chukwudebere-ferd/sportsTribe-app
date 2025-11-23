@@ -60,7 +60,8 @@ class MatchDetails {
     try {
       this.showLoading();
 
-      const url = `${API_CONFIG.footballData.baseUrl}/fixtures?id=${matchId}`;
+      // Use our proxy endpoint
+      const url = `${API_CONFIG.footballData.baseUrl}?endpoint=fixtures?id=${matchId}`;
 
       const data = await apiFetch(url, {
         headers: API_CONFIG.footballData.headers,

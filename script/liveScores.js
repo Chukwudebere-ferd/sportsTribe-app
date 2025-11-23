@@ -22,7 +22,8 @@ class LiveScores {
       this.showLoading();
 
       const today = new Date().toISOString().split("T")[0];
-      const url = `${API_CONFIG.footballData.baseUrl}/fixtures?date=${today}`;
+      // Use our proxy endpoint
+      const url = `${API_CONFIG.footballData.baseUrl}?endpoint=fixtures?date=${today}`;
 
       const data = await apiFetch(url, {
         headers: API_CONFIG.footballData.headers,
