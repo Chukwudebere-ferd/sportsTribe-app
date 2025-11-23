@@ -22,13 +22,14 @@ class LiveScores {
       this.showLoading();
 
       const today = new Date().toISOString().split("T")[0];
-      const url = `${API_CONFIG.footballData.baseUrl}/matches?date=${today}`;
+      const url = `${API_CONFIG.footballData.baseUrl}/fixtures?date=${today}`;
 
       const data = await apiFetch(url, {
         headers: API_CONFIG.footballData.headers,
       });
 
-      this.displayMatches(data.matches || []);
+      // API-Football returns data in response.response array
+      this.displayMatches(data.response || []);
       this.hideLoading();
     } catch (error) {
       console.error("Error loading matches:", error);
@@ -57,32 +58,32 @@ class LiveScores {
     const matchCards = document.querySelectorAll(".match-card");
     matchCards.forEach((card, index) => {
       card.addEventListener("click", () => {
-        const matchId = matches[index].id;
+        const matchId = matches[index].fixture.id;
         this.goToMatchDetails(matchId);
       });
     });
   }
 
   createMatchCard(match) {
-    const status = this.getMatchStatus(match.status);
-    const homeTeam = match.homeTeam.name || match.homeTeam.shortName;
-    const awayTeam = match.awayTeam.name || match.awayTeam.shortName;
-    const homeScore =
-      match.score.fullTime.home ?? match.score.halfTime.home ?? "-";
-    const awayScore =
-      match.score.fullTime.away ?? match.score.halfTime.away ?? "-";
-    const league = match.competition.name;
-    const time = this.formatMatchTime(match.utcDate);
+    const status = this.getMatchStatus(match.fixture.status.short);
+    const homeTeam = match.teams.home.name;
+    const awayTeam = match.teams.away.name;
+    const homeScore = match.goals.home ?? "-";
+    const awayScore = match.goals.away ?? "-";
+    const league = match.league.name;
+    const time = this.formatMatchTime(match.fixture.date);
 
-    const isLive = match.status === "IN_PLAY" || match.status === "PAUSED";
-    const isFinished = match.status === "FINISHED";
+    const isLive = ["1H", "2H", "HT", "ET", "P", "LIVE"].includes(
+      match.fixture.status.short
+    );
+    const isFinished = match.fixture.status.short === "FT";
     const scoreDisplay =
       isLive || isFinished
         ? `<div class="match-score">${homeScore} - ${awayScore}</div>`
         : `<div class="match-vs">VS</div>`;
 
     return `
-      <div class="match-card" data-match-id="${match.id}">
+      <div class="match-card" data-match-id="${match.fixture.id}">
         <div class="match-status ${status.class}">${status.text}</div>
         
         <div class="match-teams">
@@ -105,27 +106,26 @@ class LiveScores {
     `;
   }
 
-  getMatchStatus(status) {
-    switch (status) {
-      case "IN_PLAY":
-      case "PAUSED":
-        return { text: "LIVE", class: "live" };
-      case "FINISHED":
-        return { text: "FINISHED", class: "finished" };
-      case "SCHEDULED":
-      case "TIMED":
-        return { text: "UPCOMING", class: "scheduled" };
-      case "POSTPONED":
-        return { text: "POSTPONED", class: "scheduled" };
-      case "CANCELLED":
-        return { text: "CANCELLED", class: "scheduled" };
-      default:
-        return { text: status, class: "scheduled" };
+  getMatchStatus(statusShort) {
+    // API-Football status codes
+    const liveStatuses = ["1H", "2H", "HT", "ET", "P", "LIVE"];
+    const finishedStatuses = ["FT", "AET", "PEN"];
+
+    if (liveStatuses.includes(statusShort)) {
+      return { text: "LIVE", class: "live" };
+    } else if (finishedStatuses.includes(statusShort)) {
+      return { text: "FINISHED", class: "finished" };
+    } else if (["TBD", "NS"].includes(statusShort)) {
+      return { text: "UPCOMING", class: "scheduled" };
+    } else if (["PST", "CANC"].includes(statusShort)) {
+      return { text: "POSTPONED", class: "scheduled" };
+    } else {
+      return { text: statusShort, class: "scheduled" };
     }
   }
 
-  formatMatchTime(utcDate) {
-    const date = new Date(utcDate);
+  formatMatchTime(dateString) {
+    const date = new Date(dateString);
     const hours = date.getHours().toString().padStart(2, "0");
     const minutes = date.getMinutes().toString().padStart(2, "0");
     return `${hours}:${minutes}`;

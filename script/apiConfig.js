@@ -1,10 +1,12 @@
 // API Configuration for Sports Tribe App
 const API_CONFIG = {
+  // Using API-Football via RapidAPI (better CORS support)
   footballData: {
-    baseUrl: "https://api.football-data.org/v4",
+    baseUrl: "https://api-football-v1.p.rapidapi.com/v3",
     apiKey: "938c90c97c5f4cd781d0332677a916a5",
     headers: {
-      "X-Auth-Token": "938c90c97c5f4cd781d0332677a916a5",
+      "X-RapidAPI-Key": "938c90c97c5f4cd781d0332677a916a5",
+      "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
     },
   },
   newsApi: {

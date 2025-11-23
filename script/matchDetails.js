@@ -60,18 +60,26 @@ class MatchDetails {
     try {
       this.showLoading();
 
-      const url = `${API_CONFIG.footballData.baseUrl}/matches/${matchId}`;
+      const url = `${API_CONFIG.footballData.baseUrl}/fixtures?id=${matchId}`;
 
       const data = await apiFetch(url, {
         headers: API_CONFIG.footballData.headers,
       });
 
-      this.displayMatchDetails(data);
-      this.hideLoading();
+      // API-Football returns data in response.response array
+      const match = data.response && data.response[0];
 
-      // Start auto-refresh for live matches
-      if (data.status === "IN_PLAY" || data.status === "PAUSED") {
-        this.startAutoRefresh();
+      if (match) {
+        this.displayMatchDetails(match);
+        this.hideLoading();
+
+        // Start auto-refresh for live matches
+        const liveStatuses = ["1H", "2H", "HT", "ET", "P", "LIVE"];
+        if (liveStatuses.includes(match.fixture.status.short)) {
+          this.startAutoRefresh();
+        }
+      } else {
+        throw new Error("Match not found");
       }
     } catch (error) {
       console.error("Error loading match details:", error);
@@ -81,20 +89,15 @@ class MatchDetails {
   }
 
   displayMatchDetails(match) {
-    const homeTeam = match.homeTeam.name;
-    const awayTeam = match.awayTeam.name;
-    const homeScore =
-      match.score.fullTime.home ?? match.score.halfTime.home ?? 0;
-    const awayScore =
-      match.score.fullTime.away ?? match.score.halfTime.away ?? 0;
-    const league = match.competition.name;
-    const status = this.getMatchStatus(match.status);
-    const kickoffTime = this.formatDateTime(match.utcDate);
-    const venue = match.venue || "TBA";
-    const referee =
-      match.referees && match.referees.length > 0
-        ? match.referees[0].name
-        : "TBA";
+    const homeTeam = match.teams.home.name;
+    const awayTeam = match.teams.away.name;
+    const homeScore = match.goals.home ?? 0;
+    const awayScore = match.goals.away ?? 0;
+    const league = match.league.name;
+    const status = this.getMatchStatus(match.fixture.status.short);
+    const kickoffTime = this.formatDateTime(match.fixture.date);
+    const venue = match.fixture.venue.name || "TBA";
+    const referee = match.fixture.referee || "TBA";
 
     this.detailsContainer.innerHTML = `
       <div class="match-details-card">
@@ -143,7 +146,7 @@ class MatchDetails {
           
           <div class="info-item">
             <div class="info-label">📊 Status</div>
-            <div class="info-value">${match.status.replace("_", " ")}</div>
+            <div class="info-value">${match.fixture.status.long}</div>
           </div>
           
           <div class="info-item">
@@ -169,9 +172,9 @@ class MatchDetails {
 
   renderScoreBreakdown(score) {
     const hasHalfTime =
-      score.halfTime.home !== null && score.halfTime.away !== null;
+      score.halftime.home !== null && score.halftime.away !== null;
     const hasFullTime =
-      score.fullTime.home !== null && score.fullTime.away !== null;
+      score.fulltime.home !== null && score.fulltime.away !== null;
 
     if (!hasHalfTime && !hasFullTime) {
       return "";
@@ -194,8 +197,8 @@ class MatchDetails {
                 ? `
               <tr>
                 <td>Half Time</td>
-                <td>${score.halfTime.home}</td>
-                <td>${score.halfTime.away}</td>
+                <td>${score.halftime.home}</td>
+                <td>${score.halftime.away}</td>
               </tr>
             `
                 : ""
@@ -205,8 +208,30 @@ class MatchDetails {
                 ? `
               <tr>
                 <td>Full Time</td>
-                <td>${score.fullTime.home}</td>
-                <td>${score.fullTime.away}</td>
+                <td>${score.fulltime.home}</td>
+                <td>${score.fulltime.away}</td>
+              </tr>
+            `
+                : ""
+            }
+            ${
+              score.extratime.home !== null
+                ? `
+              <tr>
+                <td>Extra Time</td>
+                <td>${score.extratime.home}</td>
+                <td>${score.extratime.away}</td>
+              </tr>
+            `
+                : ""
+            }
+            ${
+              score.penalty.home !== null
+                ? `
+              <tr>
+                <td>Penalties</td>
+                <td>${score.penalty.home}</td>
+                <td>${score.penalty.away}</td>
               </tr>
             `
                 : ""
@@ -217,23 +242,21 @@ class MatchDetails {
     `;
   }
 
-  getMatchStatus(status) {
-    switch (status) {
-      case "IN_PLAY":
-      case "PAUSED":
-        return { text: "🔴 LIVE", class: "live" };
-      case "FINISHED":
-        return { text: "✅ FINISHED", class: "finished" };
-      case "SCHEDULED":
-      case "TIMED":
-        return { text: "⏱️ UPCOMING", class: "scheduled" };
-      default:
-        return { text: status, class: "scheduled" };
+  getMatchStatus(statusShort) {
+    const liveStatuses = ["1H", "2H", "HT", "ET", "P", "LIVE"];
+    const finishedStatuses = ["FT", "AET", "PEN"];
+
+    if (liveStatuses.includes(statusShort)) {
+      return { text: "🔴 LIVE", class: "live" };
+    } else if (finishedStatuses.includes(statusShort)) {
+      return { text: "✅ FINISHED", class: "finished" };
+    } else {
+      return { text: "⏱️ UPCOMING", class: "scheduled" };
     }
   }
 
-  formatDateTime(utcDate) {
-    const date = new Date(utcDate);
+  formatDateTime(dateString) {
+    const date = new Date(dateString);
     const options = {
       weekday: "long",
       year: "numeric",
