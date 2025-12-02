@@ -14,6 +14,7 @@ class NavigationManager {
     });
   }
 
+
   setupNavigation() {
     const navItems = document.querySelectorAll(".nav-item");
 
